@@ -33,51 +33,54 @@ for production.
 If you want to deploy it on your web server, please refer to one of the
 methods described on http://flask.pocoo.org/docs/deploying/
 
-Here is, as an example, my own configuration, using uwsgi and nginx.  As an
-additional feature, it provides compatibility with the URLs of the pix
-software that can be found at http://pix.toile-libre.org/
-It requires an additional directory, m/, that is filled with the smallest
-images (used for the thumbs).
+Deploying per Ansible is possible via [this role](https://github.com/itbane/plzimg).
 
-$ cat /etc/uwsgi.d/pix.ini
+Make sure the app itself cannot be accessed via the webserver!
+
+Example config:
+
+**/etc/uwsgi/plzimg.ini**
+~~~ini
 [uwsgi]
-socket = 127.0.0.1:3032
-master = true
-plugin = python3
-chdir = /home/louiz/plzimg
+socket = 127.0.0.1:5000
+master = True
+plugin = python
+chdir = /usr/local/lib/plzimg
 module = app:app
-processes = 4
+processes = 2
+uid = plzimg
+gid = plzimg
+~~~
 
-$ cat /etc/nginx/sites/pix.louiz.org.conf
-server
-{
-        listen          80;
-        server_name     pix.louiz.org;
-        client_max_body_size 100m;
-
-        location @pix {
-            include        uwsgi_params;
-            uwsgi_pass     127.0.0.1:3032;
-        }
-
-        location / {
-
-            # Compatibility with pix.toile-libre.org URLs
-            rewrite ^/upload/original/(.*)$ /o/$1 permanent;
-            rewrite ^/upload/img/(.*)$ /s/$1 permanent;
-            rewrite ^/upload/thumb/(.*)$ /m/$1 permanent;
-            rewrite ^/\?img=(.*)$ /$1 permanent;
-
-            root /home/louiz/plzimg/;
-
-            try_files   $uri @pix;
-        }
+**/etc/nginx/sites/img.b4ne.de.conf**
+~~~
+server {
+  # you will want some SSL config, I guess ;-)
+  root /usr/local/lib/plzimg/o;
+  client_max_body_size 100m; 
+  location @pix { 
+      include        uwsgi_params; 
+      uwsgi_pass     127.0.0.1:5000; 
+  } 
+  location /s/ { 
+        root /usr/local/lib/plzimg; 
+  } 
+  location / { 
+      try_files   $uri @pix; 
+  } 
 }
+~~~
 
 ================
     Authors
 ================
+
+Original work:
+
 Florent Le Coz (louiz’) <louiz@louiz.org>
+
+Changes to get image-links w\o `/o/` prefix:
+Jascha Sticher (itbane) <dev@b4ne.de>
 
 =================
  Contact/Support
