@@ -36,7 +36,7 @@ def post_img():
         return flask.render_template("error.html", message="Forbidden file extension: %s" % (ext,), title="Error")
     filename = get_filename(ext)
     data = file.read()
-    with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), "wb") as fd:
+    with open(os.path.join(app.config['UPLOAD_FOLDER'],'o', filename), "wb") as fd:
         fd.write(data)
     data = io.BytesIO(data)
     image = Image.open(data)
